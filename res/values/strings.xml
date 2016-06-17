@@ -1,0 +1,12 @@
+<resources>
+
+    <string name="app_name">跑步计数器</string>
+  <string name="start">开始跑步</string>
+   <string name="_0">0</string>
+ <string name="end">结束</string>
+ <string name="stop">暂停</string>
+  <string name="save">保存</string>
+   <string name="share">分享</string>
+   <string name="welcome">欢迎使用跑步计数器</string>
+     <string name="app_right">All Rights Reserved</string>
+</resources>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+      android:background="@drawable/run_layts" 
+    android:orientation="vertical"
+ >
+ <LinearLayout
+     android:id="@+id/le1"
+      android:layout_width="wrap_content"
+      android:layout_height="35dp"
+      android:layout_gravity="center"    
+      android:orientation="horizontal" >  
+<ImageView
+        android:id="@+id/step"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:src="@drawable/today_step" />
+<TextView
+            android:id="@+id/data"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_toRightOf="@id/step"
+            android:gravity="center"
+            android:textSize="18sp"
+            android:textColor="@color/darkslategray"
+            android:focusable="false"          
+            android:text="运动数据:" />
+</LinearLayout>
+  <LinearLayout
+      android:id="@+id/linearLayout1"
+      android:layout_width="250dp"
+      android:layout_height="80dp"
+      android:layout_marginTop="38dp"
+      android:layout_centerHorizontal="true"
+      android:layout_gravity="center"    
+      android:orientation="vertical" >   
+        <TextView
+            android:id="@+id/speed"
+            android:layout_width="wrap_content"
+            android:layout_height="25dp"
+            android:drawableLeft="@drawable/dis3"
+            android:gravity="center"
+            android:focusable="false"          
+            android:hint="@string/_0" />
+        <TextView
+            android:id="@+id/calorie"
+            android:layout_width="wrap_content"
+            android:layout_height="25dp"
+            android:drawableLeft="@drawable/cal2"
+            android:focusable="false"
+            android:gravity="center"
+            android:hint="@string/_0" />
+        <TextView
+            android:id="@+id/km"
+            android:layout_width="wrap_content"
+            android:layout_height="25dp"
+            android:drawableLeft="@drawable/dis2"
+            android:gravity="center"
+            android:focusable="false"
+            android:hint="@string/_0" />
+    </LinearLayout>
+    <LinearLayout>
+    <com.baidu.mapapi.map.MapView 
+         android:id="@+id/mapView"  
+    android:layout_width="fill_parent"  
+    android:layout_height="fill_parent"  
+    android:clickable="true"    
+        />
+</LinearLayout>
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="wrap_content"
+        android:layout_height="35dp" 
+        android:layout_toRightOf="@id/le1"        
+        android:orientation="horizontal" >
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/run_time" />
+    <Chronometer
+        android:id="@+id/testtime"
+        android:layout_width="193dp"
+        android:layout_height="wrap_content"      
+        android:format="00:00:00"
+        android:textColor="#ffff0000"
+        android:textSize="12pt" />
+ </LinearLayout>
+    <LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"  
+        android:background="@drawable/run_layt"     
+        android:gravity="center"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/btn_bg"
+            android:text="@string/end"
+            android:textColor="#909566" />
+
+        <ImageButton
+            android:id="@+id/start"
+            android:layout_width="143dp"
+            android:layout_height="wrap_content"
+            android:background="@layout/image_btn"
+            android:contentDescription="@string/app_name"
+            android:src="@drawable/start_run" />
+
+        <Button
+            android:id="@+id/stop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/btn_bg"
+            android:text="@string/stop"
+            android:textColor="#909566" />
+
+    </LinearLayout>
+</RelativeLayout>
