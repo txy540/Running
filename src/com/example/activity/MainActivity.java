@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.baidu.mapapi.SDKInitializer;
 import com.example.distancecompute.DistanceCompute;
 import com.example.model.RunInfo;
 import com.example.running.R;
@@ -103,6 +104,7 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle saveInstanceState) {
 		Bundle savedInstanceState = null;
 		super.onCreate(savedInstanceState);
+		SDKInitializer.initialize(getApplicationContext());
 		setContentView(R.layout.running);
 		run = new RunInfo();
 		StartRun = (ImageButton) findViewById(R.id.start);

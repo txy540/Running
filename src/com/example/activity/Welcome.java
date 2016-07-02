@@ -1,7 +1,6 @@
 package com.example.activity;
 
 import com.example.running.R;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
