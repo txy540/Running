@@ -13,6 +13,7 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
@@ -65,6 +66,14 @@ public class MainActivity extends Activity {
 	double distance;
 	float calorie;
 	double time;
+	private MapView mMapView;
+    private BaiduMap mBaiduMap;
+    private LocationService locationService;
+    private MyLocationListener mMyLocationListener;
+	 Context getApplicationContext = null;
+    protected MyLocationConfiguration.LocationMode mCurrentMode;
+    private boolean isPrepared;
+    private boolean isFirstLoc; //是否首次定位
 	//DistanceCompute mgetDistance;
 	LocationListener locationListener;
 	Chronometer ch;
@@ -115,17 +124,13 @@ public class MainActivity extends Activity {
 			}
 		}
 	};
-
-        
-    
 	protected void onCreate(Bundle saveInstanceState) {
 		Bundle savedInstanceState = null;
 		super.onCreate(savedInstanceState);
 		SDKInitializer.initialize(getApplicationContext());
-		setContentView(R.layout.running);
-		  //mLocationClient = new LocationClient(getApplicationContext());     //声明LocationClient类
+		setContentView(R.layout.running);	
 		run = new RunInfo();
-		StartRun = (ImageButton) findViewById(R.id.start);
+		StartRun = (ImageButton)findViewById(R.id.start);
 		refreshTimer.schedule(refreshTask, 0, REFRESH_TIME);// 0秒后开始，4秒为刷新周期
 		TvDistance = (TextView) findViewById(R.id.km);
 		StopRun = (Button) findViewById(R.id.stop);
@@ -133,7 +138,18 @@ public class MainActivity extends Activity {
 		TvSpeed = (TextView) findViewById(R.id.speed);
 		Tvcalorie = (TextView) findViewById(R.id.calorie);
 		ch = (Chronometer) findViewById(R.id.testtime);
-		ch.setFormat("%s");  		
+		ch.setFormat("%s");  
+		mMapView = (MapView)findViewById(R.id.mapView);
+        mBaiduMap = mMapView.getMap();
+        mBaiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(15).build()));
+
+        mBaiduMap.setMyLocationConfigeration(new MyLocationConfiguration(
+                        mCurrentMode, true, null));
+        mBaiduMap.setMyLocationEnabled(true);
+		locationService = new LocationService(getApplicationContext);
+        mMyLocationListener = new MyLocationListener(mMapView, mBaiduMap, isFirstLoc);
+        locationService.registerListener(mMyLocationListener);
+        locationService.start();
 		StartRun.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -181,7 +197,6 @@ public class MainActivity extends Activity {
 
 								speed1 = location.getSpeed();
 								speed = 1000 / speed1 / 60;
-
 								// float[] results = new float[1];
 								// Location.distanceBetween(lat1, lng1, lat2,
 								// lng2,
@@ -278,6 +293,8 @@ public class MainActivity extends Activity {
 			}			
 		});		
 	}
+	
+    
 	public boolean onKeyDown(int keyCode, KeyEvent event) {//用来捕捉手机键盘被按下的事件，该方法的返回值为一个boolean类型的变量，当返回true时，表示已经完整地处理了这个事件，并不希望其他的回调方法再次进行处理，而当返回false时，表示并没有完全处理完该事件，更希望其他回调方法继续对其进行处理，例如Activity中的回调方法
     	//参数keyCode，该参数为被按下的键值即键盘码，参数event，该参数为按键事件的对象，其中包含了触发事件的详细信息，例如事件的状态、事件的类型、事件发生的时间等。
         if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {//if判断中要加一个event.getAction() == KeyEvent.ACTION_DOWN判断，因为按键有两个事件ACTION_DOWN和ACTION_UP，也就是按下和松开，如果不加这个判断，代码会执行两遍。
@@ -301,12 +318,14 @@ public class MainActivity extends Activity {
 
 	public void onResume() {
 		super.onResume();
+		mMapView.onResume();
 		ch.setBase(SystemClock.elapsedRealtime());
 		MobclickAgent.onResume(this);
 	}
 
 	public void onPause() {
 		super.onPause();
+		mMapView.onPause();
 		MobclickAgent.onPause(this);
 	}
 	protected void onDestroy() {
@@ -316,6 +335,15 @@ public class MainActivity extends Activity {
 		locationManager.removeUpdates(locationListener);
 		}
 		}
+	public void onDestroyView() {
+        super.onDestroy();
+        // 退出时销毁定位
+        locationService.unregisterListener(mMyLocationListener);
+        locationService.stop();
+        // 关闭定位图层
+        mBaiduMap.setMyLocationEnabled(false);
+        mMapView.onDestroy();
+    }
 }
 /**
  * 定位服务监听器
@@ -323,6 +351,7 @@ public class MainActivity extends Activity {
  class MyLocationListener implements BDLocationListener {
     private MapView mMapView;
     private BaiduMap mBaiduMap;
+    private LocationService locationService;
     private boolean isFirstLoc; //是否首次定位
 
     public MyLocationListener(MapView mapView, BaiduMap baiduMap, boolean isFirstLoc) {
@@ -330,7 +359,7 @@ public class MainActivity extends Activity {
         mBaiduMap = baiduMap;
         this.isFirstLoc = isFirstLoc;
     }
-
+    
     @Override
     public void onReceiveLocation(BDLocation bdLocation) {
         // map view 销毁后不在处理新接收的位置
