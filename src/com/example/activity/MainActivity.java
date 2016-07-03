@@ -70,10 +70,9 @@ public class MainActivity extends Activity {
     private BaiduMap mBaiduMap;
     private LocationService locationService;
     private MyLocationListener mMyLocationListener;
-	 Context getApplicationContext = null;
     protected MyLocationConfiguration.LocationMode mCurrentMode;
     private boolean isPrepared;
-    private boolean isFirstLoc; //是否首次定位
+    private boolean isFirstLoc=true; //是否首次定位
 	//DistanceCompute mgetDistance;
 	LocationListener locationListener;
 	Chronometer ch;
@@ -141,12 +140,15 @@ public class MainActivity extends Activity {
 		ch.setFormat("%s");  
 		mMapView = (MapView)findViewById(R.id.mapView);
         mBaiduMap = mMapView.getMap();
-        mBaiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(15).build()));
-
+        mBaiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(15).build())); 
+        // 设置定位图层的配置（定位模式，是否允许方向信息，用户自定义定位图标）
         mBaiduMap.setMyLocationConfigeration(new MyLocationConfiguration(
                         mCurrentMode, true, null));
+//        BitmapDescriptor mCurrentMarker = BitmapDescriptorFactory  
+//        	    .fromResource(R.drawable-hdpi.icon);  
+//       MyLocationConfiguration config = new MyLocationConfiguration(mCurrentMode, true, mCurrentMarker); 
         mBaiduMap.setMyLocationEnabled(true);
-		locationService = new LocationService(getApplicationContext);
+		locationService = new LocationService(getApplicationContext());
         mMyLocationListener = new MyLocationListener(mMapView, mBaiduMap, isFirstLoc);
         locationService.registerListener(mMyLocationListener);
         locationService.start();
@@ -352,7 +354,7 @@ public class MainActivity extends Activity {
     private MapView mMapView;
     private BaiduMap mBaiduMap;
     private LocationService locationService;
-    private boolean isFirstLoc; //是否首次定位
+    private boolean isFirstLoc=true; //是否首次定位
 
     public MyLocationListener(MapView mapView, BaiduMap baiduMap, boolean isFirstLoc) {
         mMapView = mapView;
@@ -373,6 +375,7 @@ public class MainActivity extends Activity {
                 .longitude(bdLocation.getLongitude()).build();
         mBaiduMap.setMyLocationData(locData);
         if (isFirstLoc) {
+        	Log.i("location", "first");
             isFirstLoc = false;
             LatLng ll = new LatLng(bdLocation.getLatitude(),
                     bdLocation.getLongitude());
