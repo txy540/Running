@@ -4,7 +4,22 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.baidu.location.BDLocation;
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
+import com.baidu.location.LocationClientOption.LocationMode;
 import com.baidu.mapapi.SDKInitializer;
+import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapStatusUpdate;
+import com.baidu.mapapi.map.MapStatusUpdateFactory;
+import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MyLocationConfiguration;
+import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.TextureMapView;
+import com.baidu.mapapi.model.LatLng;
 import com.example.distancecompute.DistanceCompute;
 import com.example.model.RunInfo;
 import com.example.running.R;
@@ -101,11 +116,14 @@ public class MainActivity extends Activity {
 		}
 	};
 
+        
+    
 	protected void onCreate(Bundle saveInstanceState) {
 		Bundle savedInstanceState = null;
 		super.onCreate(savedInstanceState);
 		SDKInitializer.initialize(getApplicationContext());
 		setContentView(R.layout.running);
+		  //mLocationClient = new LocationClient(getApplicationContext());     //声明LocationClient类
 		run = new RunInfo();
 		StartRun = (ImageButton) findViewById(R.id.start);
 		refreshTimer.schedule(refreshTask, 0, REFRESH_TIME);// 0秒后开始，4秒为刷新周期
@@ -115,10 +133,11 @@ public class MainActivity extends Activity {
 		TvSpeed = (TextView) findViewById(R.id.speed);
 		Tvcalorie = (TextView) findViewById(R.id.calorie);
 		ch = (Chronometer) findViewById(R.id.testtime);
-		ch.setFormat("%s");        
+		ch.setFormat("%s");  		
 		StartRun.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				
 				StartRun.setImageDrawable(getResources().getDrawable(R.drawable.today_run));
 				// 开始跑步
 				if (isStart) {// 设置开始计时时间				
@@ -297,4 +316,128 @@ public class MainActivity extends Activity {
 		locationManager.removeUpdates(locationListener);
 		}
 		}
+}
+/**
+ * 定位服务监听器
+ */
+ class MyLocationListener implements BDLocationListener {
+    private MapView mMapView;
+    private BaiduMap mBaiduMap;
+    private boolean isFirstLoc; //是否首次定位
+
+    public MyLocationListener(MapView mapView, BaiduMap baiduMap, boolean isFirstLoc) {
+        mMapView = mapView;
+        mBaiduMap = baiduMap;
+        this.isFirstLoc = isFirstLoc;
+    }
+
+    @Override
+    public void onReceiveLocation(BDLocation bdLocation) {
+        // map view 销毁后不在处理新接收的位置
+        if (bdLocation == null || mMapView == null) {
+            return;
+        }
+        MyLocationData locData = new MyLocationData.Builder()
+                .accuracy(bdLocation.getRadius())
+                // 此处设置开发者获取到的方向信息，顺时针0-360
+                .direction(0).latitude(bdLocation.getLatitude())
+                .longitude(bdLocation.getLongitude()).build();
+        mBaiduMap.setMyLocationData(locData);
+        if (isFirstLoc) {
+            isFirstLoc = false;
+            LatLng ll = new LatLng(bdLocation.getLatitude(),
+                    bdLocation.getLongitude());
+            Log.i("location", ll.toString());
+            MapStatusUpdate u = MapStatusUpdateFactory.newLatLng(ll);
+            mBaiduMap.animateMapStatus(u);
+        }
+    }
+}
+
+/**
+ * 定位服务
+ */
+ class LocationService {
+    private LocationClient client = null;
+    private LocationClientOption mOption,DIYoption;
+    private final Object  objLock = new Object();
+
+    public LocationService(Context locationContext){
+        synchronized (objLock){
+            if (client == null){
+                client = new LocationClient(locationContext);
+                client.setLocOption(getDefaultLocationClientOption());
+            }
+        }
+    }
+
+    public boolean registerListener(BDLocationListener listener){
+        boolean isSuccess = false;
+        if(listener != null){
+            client.registerLocationListener(listener);
+            isSuccess = true;
+        }
+        return  isSuccess;
+    }
+
+    public void unregisterListener(BDLocationListener listener){
+        if(listener != null){
+            client.unRegisterLocationListener(listener);
+        }
+    }
+
+    public boolean setLocationOption(LocationClientOption option){
+        if(option != null){
+            if(client.isStarted())
+                client.stop();
+            DIYoption = option;
+            client.setLocOption(option);
+        }
+        return false;
+    }
+
+    public LocationClientOption getOption(){
+        return DIYoption;
+    }
+
+    public LocationClientOption getDefaultLocationClientOption() {
+        if(mOption == null){
+            mOption = new LocationClientOption();
+            mOption.setOpenGps(true);
+            mOption.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);//可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
+            mOption.setCoorType("bd09ll");//可选，默认gcj02，设置返回的定位结果坐标系，如果配合百度地图使用，建议设置为bd09ll;
+            mOption.setScanSpan(1000);//可选，默认0，即仅定位一次，设置发起定位请求的间隔需要大于等于1000ms才是有效的
+            mOption.setIsNeedAddress(true);//可选，设置是否需要地址信息，默认不需要
+            mOption.setIsNeedLocationDescribe(true);//可选，设置是否需要地址描述
+            mOption.setNeedDeviceDirect(false);//可选，设置是否需要设备方向结果
+            mOption.setLocationNotify(false);//可选，默认false，设置是否当gps有效时按照1S1次频率输出GPS结果
+            mOption.setIgnoreKillProcess(true);//可选，默认true，定位SDK内部是一个SERVICE，并放到了独立进程，设置是否在stop的时候杀死这个进程，默认不杀死
+            mOption.setIsNeedLocationDescribe(true);//可选，默认false，设置是否需要位置语义化结果，可以在BDLocation.getLocationDescribe里得到，结果类似于“在北京天安门附近”
+            mOption.setIsNeedLocationPoiList(true);//可选，默认false，设置是否需要POI结果，可以在BDLocation.getPoiList里得到
+            mOption.SetIgnoreCacheException(false);//可选，默认false，设置是否收集CRASH信息，默认收集
+        }
+        return mOption;
+    }
+
+    /**
+     * 开启定位服务
+     */
+    public void start(){
+        synchronized (objLock) {
+            if(client != null && !client.isStarted()){
+                client.start();
+            }
+        }
+    }
+
+    /**
+     * 终止定位服务
+     */
+    public void stop(){
+        synchronized (objLock) {
+            if(client != null && client.isStarted()){
+                client.stop();
+            }
+        }
+    }
 }
