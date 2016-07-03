@@ -1,5 +1,6 @@
 package com.example.activity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -19,6 +20,9 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.OverlayOptions;
+import com.baidu.mapapi.map.PolygonOptions;
+import com.baidu.mapapi.map.Stroke;
 import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.model.LatLng;
 import com.example.distancecompute.DistanceCompute;
@@ -183,8 +187,8 @@ public class MainActivity extends Activity {
 //						startLocation = locationManager
 //								.getLastKnownLocation(provider);
 //					
-//						lat1 = startLocation.getLatitude();
-//						lng1 = startLocation.getLongitude();
+						lat1 = startLocation.getLatitude();
+						lng1 = startLocation.getLongitude();
 //					}
 
 					// LocationListener LocationListener = null;
@@ -199,6 +203,23 @@ public class MainActivity extends Activity {
 
 								speed1 = location.getSpeed();
 								speed = 1000 / speed1 / 60;
+								lat2=location.getLatitude();
+								lng2=location.getLongitude();
+								//定义两个点的轨迹
+								LatLng pt1 = new LatLng(lat1, lng1);  
+								LatLng pt2 = new LatLng(lat2, lng2); 
+								List<LatLng> pts = new ArrayList<LatLng>();  
+								pts.add(pt1);  
+								pts.add(pt2); 
+								//构建用户绘制多边形的Option对象  
+								OverlayOptions polygonOption = new PolygonOptions()  
+								    .points(pts)  
+								    .stroke(new Stroke(5, 0xAA00FF00))  
+								    .fillColor(0xAAFFFF00);  
+								//在地图上添加多边形Option，用于显示  
+								mBaiduMap.addOverlay(polygonOption);
+								lat1=lat2;
+								lng1=lng2;
 								// float[] results = new float[1];
 								// Location.distanceBetween(lat1, lng1, lat2,
 								// lng2,
@@ -332,20 +353,17 @@ public class MainActivity extends Activity {
 	}
 	protected void onDestroy() {
 		super.onDestroy();
-		if (locationManager != null) {
-		// 关闭程序时将监听器移除
-		locationManager.removeUpdates(locationListener);
-		}
-		}
-	public void onDestroyView() {
-        super.onDestroy();
-        // 退出时销毁定位
+		  // 退出时销毁定位
         locationService.unregisterListener(mMyLocationListener);
         locationService.stop();
         // 关闭定位图层
         mBaiduMap.setMyLocationEnabled(false);
         mMapView.onDestroy();
-    }
+		if (locationManager != null) {
+		// 关闭程序时将监听器移除
+		locationManager.removeUpdates(locationListener);
+		}
+		}
 }
 /**
  * 定位服务监听器
@@ -355,7 +373,6 @@ public class MainActivity extends Activity {
     private BaiduMap mBaiduMap;
     private LocationService locationService;
     private boolean isFirstLoc=true; //是否首次定位
-
     public MyLocationListener(MapView mapView, BaiduMap baiduMap, boolean isFirstLoc) {
         mMapView = mapView;
         mBaiduMap = baiduMap;
@@ -378,7 +395,7 @@ public class MainActivity extends Activity {
         	Log.i("location", "first");
             isFirstLoc = false;
             LatLng ll = new LatLng(bdLocation.getLatitude(),
-                    bdLocation.getLongitude());
+                    bdLocation.getLongitude());           
             Log.i("location", ll.toString());
             MapStatusUpdate u = MapStatusUpdateFactory.newLatLng(ll);
             mBaiduMap.animateMapStatus(u);
