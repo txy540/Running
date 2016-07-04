@@ -22,6 +22,7 @@ import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolygonOptions;
+import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.map.Stroke;
 import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.model.LatLng;
@@ -37,6 +38,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -84,13 +86,14 @@ public class MainActivity extends Activity {
 	public double lat1, lat2;// 纬度
 	public double lng1, lng2;// 经度
 	private boolean isStart = true;// 是否开始计算移动距离，是否开始跑步
+	public boolean isLocation= false;// 是否开始跑步，显示运动轨迹
 	public static final int UPDATE_TIME = 1;
 	public static final int REFRESH_UI = 2;
 	// private RunInfoDao mRunInfoDao;// 数据库
 	private volatile boolean isRefreshUI = true;// 是否暂停刷新UI的标识
 	private static final int REFRESH_TIME = 4000; // 4秒刷新一次
 	// private DistanceCompute mgetDistance;
-	Location startLocation = null;
+	Location startLocation=null;
 	RunInfo run;
 	@SuppressLint("HandlerLeak")
 	private Handler refreshHandler = new Handler() {
@@ -131,7 +134,7 @@ public class MainActivity extends Activity {
 		Bundle savedInstanceState = null;
 		super.onCreate(savedInstanceState);
 		SDKInitializer.initialize(getApplicationContext());
-		setContentView(R.layout.running);	
+		setContentView(R.layout.running);		
 		run = new RunInfo();
 		StartRun = (ImageButton)findViewById(R.id.start);
 		refreshTimer.schedule(refreshTask, 0, REFRESH_TIME);// 0秒后开始，4秒为刷新周期
@@ -159,7 +162,7 @@ public class MainActivity extends Activity {
 		StartRun.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				
+				isLocation=true;	
 				StartRun.setImageDrawable(getResources().getDrawable(R.drawable.today_run));
 				// 开始跑步
 				if (isStart) {// 设置开始计时时间				
@@ -186,40 +189,22 @@ public class MainActivity extends Activity {
 //						Log.e("provider可用", "provider可用");
 //						startLocation = locationManager
 //								.getLastKnownLocation(provider);
-//					
-						lat1 = startLocation.getLatitude();
-						lng1 = startLocation.getLongitude();
+////					
+//						lat1 = startLocation.getLatitude();
+//						lng1 = startLocation.getLongitude();
 //					}
 
 					// LocationListener LocationListener = null;
 					LocationListener locationListener = new LocationListener() {
 						@Override
 						public void onLocationChanged(Location location) {
-							if (location != null) {
+							if (location!= null) {
 								// 得到设备的位置信息,计算距离
 								if (startLocation == null) {
 									startLocation = location;
 								}
-
 								speed1 = location.getSpeed();
 								speed = 1000 / speed1 / 60;
-								lat2=location.getLatitude();
-								lng2=location.getLongitude();
-								//定义两个点的轨迹
-								LatLng pt1 = new LatLng(lat1, lng1);  
-								LatLng pt2 = new LatLng(lat2, lng2); 
-								List<LatLng> pts = new ArrayList<LatLng>();  
-								pts.add(pt1);  
-								pts.add(pt2); 
-								//构建用户绘制多边形的Option对象  
-								OverlayOptions polygonOption = new PolygonOptions()  
-								    .points(pts)  
-								    .stroke(new Stroke(5, 0xAA00FF00))  
-								    .fillColor(0xAAFFFF00);  
-								//在地图上添加多边形Option，用于显示  
-								mBaiduMap.addOverlay(polygonOption);
-								lat1=lat2;
-								lng1=lng2;
 								// float[] results = new float[1];
 								// Location.distanceBetween(lat1, lng1, lat2,
 								// lng2,
@@ -258,7 +243,8 @@ public class MainActivity extends Activity {
 					locationManager.requestLocationUpdates(provider, 0, 3,
 							locationListener);
 				}
-
+			
+			
 				// }
 
 		//	}
@@ -267,6 +253,7 @@ public class MainActivity extends Activity {
 			// 暂停
 			@Override
 			public void onClick(View v) {
+				isLocation=false;
 				if (!isPause) {
 					isStart = false;
 					refreshTask.cancel();
@@ -289,7 +276,7 @@ public class MainActivity extends Activity {
 			// 停止
 			@Override
 			public void onClick(View v) {
-				// TODO Auto-generated method stub
+				isLocation=false;	
 				AlertDialog.Builder dialog = new AlertDialog.Builder(
 						MainActivity.this);
 				dialog.setTitle("提示");
@@ -372,19 +359,44 @@ public class MainActivity extends Activity {
     private MapView mMapView;
     private BaiduMap mBaiduMap;
     private LocationService locationService;
+    public double lat1, lat2;// 纬度
+	public double lng1, lng2;// 经度
+    private BDLocation bdstartLocation=null;
     private boolean isFirstLoc=true; //是否首次定位
-    public MyLocationListener(MapView mapView, BaiduMap baiduMap, boolean isFirstLoc) {
+    MainActivity activity=new MainActivity();
+    public MyLocationListener(MapView mapView, BaiduMap baiduMap,boolean isFirstLoc) {
         mMapView = mapView;
         mBaiduMap = baiduMap;
-        this.isFirstLoc = isFirstLoc;
+        this.isFirstLoc=isFirstLoc;
     }
-    
     @Override
     public void onReceiveLocation(BDLocation bdLocation) {
         // map view 销毁后不在处理新接收的位置
         if (bdLocation == null || mMapView == null) {
             return;
         }
+		if(activity.isLocation){
+        if (bdLocation!= null) {
+			if (bdstartLocation == null) {
+				bdstartLocation = bdLocation;
+				lat1 = bdLocation.getLatitude();
+				lng1 = bdLocation.getLongitude();
+			}
+			lat2=bdLocation.getLatitude();
+			lng2=bdLocation.getLongitude();
+			//定义两个点的轨迹
+			LatLng pt1 = new LatLng(lat1, lng1);  
+			LatLng pt2 = new LatLng(lat2, lng2); 		
+			// 构造折线点坐标
+			List<LatLng> points = new ArrayList<LatLng>();
+	     	points.add(pt1);  
+			points.add(pt2); 
+			OverlayOptions ooPolyline = new PolylineOptions().width(10)
+                        .color(Color.BLUE).points(points);
+                mBaiduMap.addOverlay(ooPolyline);
+			lat1=lat2;
+			lng1=lng2;}
+		}
         MyLocationData locData = new MyLocationData.Builder()
                 .accuracy(bdLocation.getRadius())
                 // 此处设置开发者获取到的方向信息，顺时针0-360
@@ -401,7 +413,8 @@ public class MainActivity extends Activity {
             mBaiduMap.animateMapStatus(u);
         }
     }
-}
+    }
+
 
 /**
  * 定位服务
